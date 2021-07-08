@@ -1,6 +1,7 @@
 import sys
 import dpkt
 import datetime
+import json
 from dpkt.utils import mac_to_str, inet_to_str
 
 csv_file = None
@@ -11,12 +12,21 @@ def print_packets(pcap):
        Args:
            pcap: dpkt pcap reader object (dpkt.pcap.Reader)
     """
+    chrome_trace_events = {
+        "displayTimeUnit": "ms",
+        # "name": "process_name", "ph": "M", "pid": "Main", "tid": "工作", "args": {"name": "时间线"}}
+        'traceEvents': []
+    }
     global csv_file
+    time_0 = None
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
 
         # Print out the timestamp in UTC
         # print('Timestamp: ', str(datetime.datetime.utcfromtimestamp(timestamp)))
+        time = datetime.datetime.utcfromtimestamp(timestamp)
+        if not time_0:
+            time_0 = time
 
         # Unpack the Ethernet frame (mac src/dst, ethertype)
         eth = dpkt.ethernet.Ethernet(buf)
@@ -31,18 +41,37 @@ def print_packets(pcap):
         # Pulling out src, dst, length, fragment info, TTL, and Protocol
         ip = eth.data
 
+        microsecond = (time - time_0).total_seconds() * 1000000
+
         ts = str(datetime.datetime.utcfromtimestamp(timestamp))
-        if isinstance(ip.data, dpkt.udp.UDP): # or isinstance(ip.data, dpkt.tcp.TCP):
+        if isinstance(ip.data, dpkt.udp.UDP): #  or isinstance(ip.data, dpkt.tcp.TCP):
             protocol = ip.data.__class__.__name__
             udp = ip.data
             payload = len(udp)
             csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
                 (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
 
+            chrome_trace_events['traceEvents'].append({
+                'name': str(payload),
+                'cat':  protocol,
+                'ph': 'X',
+                'ts': microsecond,
+                'dur': 1,
+                'pid': inet_to_str(ip.src),
+                'tid': 'Port: %d' % udp.sport,
+                'args': {
+                    'bytes': payload,
+                    'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
+                    'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport)
+                }
+            })
+
         # Print out the info, including the fragment flags and offset
         # print('IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' %
             #   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, ip.df, ip.mf, ip.offset))
+    json.dump(chrome_trace_events, json_file, indent=4)
 
+    
     # Pretty print the last packet
     # print('** Pretty print demo **\n')
     # print(eth)
