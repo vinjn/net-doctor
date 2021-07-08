@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style>
+    body {
+      font-family: arial, sans-serif;
+    }
+  </style>
+  <script
+    src="https://sf1-ttcdn-tos.pstatp.com/obj/developer-baas/baas/ttnbrzs5vgcryya2z2/7d1b75402231d1cd_1583755520315.js"></script>
+  <script>
+    'use strict';
+    window.__hideTraceViewerPolyfillWarning = true;
+
+    function onTraceViewerImportFail() {
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.textContent =
+          'tracing/bin/trace_viewer_full.html is missing. ' +
+          'Run vulcanize_trace_viewer from $TRACE_VIEWER and reload.';
+      });
+    }
+  </script>
+  <link rel="import"
+    href="https://sf1-ttcdn-tos.pstatp.com/obj/developer-baas/baas/ttnbrzs5vgcryya2z2/4b94a178762f4049_1583756222365.html"
+    onerror="onTraceViewerImportFail(event)">
+  <style>
+    html,
+    body {
+      box-sizing: border-box;
+      overflow: hidden;
+      margin: 0px;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #trace-viewer {
+      width: 100%;
+      height: 100%;
+    }
+
+    #trace-viewer:focus {
+      outline: none;
+    }
+  </style>
+  <script>
+    'use strict';
+
+    (function () {
+      var viewer;
+      var url;
+      var model;
+
+      function load() {
+        var req = new XMLHttpRequest();
+        var isBinary = /[.]gz$/.test(url) || /[.]zip$/.test(url);
+        req.overrideMimeType('text/plain; charset=x-user-defined');
+        req.overrideMimeType('contentType: "application/x-www-form-urlencoded;charset=utf-8"');
+        console.log(url);
+        req.open('GET', url, true);
+        if (isBinary)
+          req.responseType = 'arraybuffer';
+
+        req.onreadystatechange = function (event) {
+          if (req.readyState !== 4)
+            return;
+
+          window.setTimeout(function () {
+            if (req.status === 200)
+              onResult(isBinary ? req.response : req.responseText);
+            else
+              onResultFail(req.status);
+          }, 0);
+        };
+        req.send(null);
+      }
+
+      function onResultFail(err) {
+        var overlay = new tr.ui.b.Overlay();
+        overlay.textContent = err + ': ' + url + ' could not be loaded';
+        overlay.title = 'Failed to fetch data';
+        overlay.visible = true;
+      }
+
+      function onResult(result) {
+        model = new tr.Model();
+        var i = new tr.importer.Import(model);
+        var p = i.importTracesWithProgressDialog([result]);
+        p.then(onModelLoaded, onImportFail);
+      }
+
+      function onModelLoaded() {
+        viewer.model = model;
+        var urlParams = new URLSearchParams(window.location.search);
+        var title = urlParams.get("title") || "";
+        document.getElementById('title').innerHTML = title;
+      }
+
+      function onImportFail(err) {
+        var overlay = new tr.ui.b.Overlay();
+        overlay.textContent = tr.b.normalizeException(err).message;
+        overlay.title = 'Import error';
+        overlay.visible = true;
+      }
+
+      document.addEventListener('WebComponentsReady', function () {
+        var container = document.createElement('track-view-container');
+        container.id = 'track_view_container';
+
+        viewer = document.createElement('tr-ui-timeline-view');
+        viewer.track_view_container = container;
+        Polymer.dom(viewer).appendChild(container);
+
+        viewer.id = 'trace-viewer';
+        viewer.globalMode = true;
+        Polymer.dom(document.body).appendChild(viewer);
+
+        var urlParams = new URLSearchParams(window.location.search);
+        url = urlParams.get("tracing_url");
+        load();
+      });
+    }());
+  </script>
+</head>
+<body>
+</body>
+</html>

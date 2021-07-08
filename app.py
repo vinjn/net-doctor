@@ -3,12 +3,15 @@ import dpkt
 import datetime
 from dpkt.utils import mac_to_str, inet_to_str
 
+csv_file = None
+json_file = None
 
 def print_packets(pcap):
     """Print out information about each packet in a pcap
        Args:
            pcap: dpkt pcap reader object (dpkt.pcap.Reader)
     """
+    global csv_file
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
 
@@ -33,7 +36,7 @@ def print_packets(pcap):
             protocol = ip.data.__class__.__name__
             udp = ip.data
             payload = len(udp)
-            print('%s,%4d,%s,%s:%d,%s:%d' %
+            csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
                 (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
 
         # Print out the info, including the fragment flags and offset
@@ -44,20 +47,22 @@ def print_packets(pcap):
     # print('** Pretty print demo **\n')
     # print(eth)
 
-
 def process_file(file_name):
     """Open up a test pcap file and print out the packets"""
+    global csv_file, json_file
     # with open('qnet_save/pcap/com.t3game.vs_2021_07_05_23_36_18.pcap', 'rb') as f:
     with open(file_name, 'rb') as f:
         if '.pcapng' in file_name:
             pcap = dpkt.pcapng.Reader(f)
         else:
             pcap = dpkt.pcap.Reader(f)
-        print('protocol,bytes,timestamp,src,dst')
+        csv_file = open(file_name + '.csv', 'w')
+        json_file = open(file_name + '.json', 'w')
+        csv_file.write('protocol,bytes,timestamp,src,dst\n')
         print_packets(pcap)
 
 if __name__ == '__main__':
     pcap_file = 'qnet_save/pcap/com.t3game.vs_2021_07_05_15_49_30_edited.pcapng'
     if len(sys.argv) > 1:
-        pkg_csv = sys.argv[1]    
+        pkg_csv = sys.argv[1]
     process_file(pcap_file)
