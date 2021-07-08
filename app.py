@@ -41,7 +41,7 @@ def print_packets(pcap):
         # Pulling out src, dst, length, fragment info, TTL, and Protocol
         ip = eth.data
 
-        microsecond = (time - time_0).total_seconds() * 1000000
+        seconds = (time - time_0).total_seconds()
 
         ts = str(datetime.datetime.utcfromtimestamp(timestamp))
         if isinstance(ip.data, dpkt.udp.UDP): #  or isinstance(ip.data, dpkt.tcp.TCP):
@@ -55,14 +55,15 @@ def print_packets(pcap):
                 'name': str(payload),
                 'cat':  protocol,
                 'ph': 'X',
-                'ts': microsecond,
-                'dur': 1,
+                'ts': int(seconds) * 1000000,
+                'dur': 1000000,
                 'pid': inet_to_str(ip.src),
-                'tid': 'Port: %d' % udp.sport,
+                'tid': 'Src Port: %d' % udp.sport,
                 'args': {
                     'bytes': payload,
                     'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
-                    'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport)
+                    'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport),
+                    'data': udp.data.hex()
                 }
             })
 
