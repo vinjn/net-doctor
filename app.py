@@ -51,6 +51,7 @@ def print_packets(pcap):
             csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
                 (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
 
+            data = udp.data.hex(' ')
             chrome_trace_events['traceEvents'].append({
                 'name': str(payload),
                 'cat':  protocol,
@@ -63,7 +64,7 @@ def print_packets(pcap):
                     'bytes': payload,
                     'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
                     'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport),
-                    'data': udp.data.hex()
+                    'data': data
                 }
             })
 
