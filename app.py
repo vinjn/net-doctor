@@ -127,6 +127,29 @@ def print_packets(pcap):
                 'tid': 'package_bytes',
                 # 'args': {}
             })
+
+            # sum_events.append({
+            #     'name': 'package_count',
+            #     'cat':  'count',
+            #     'ph': 'C',
+            #     'ts': time_key,
+            #     'dur': event_duration,
+            #     'pid': panel_k,
+            #     'args': {
+            #         'count': count,
+            #     }
+            # })
+            # sum_events.append({
+            #     'name': 'package_bytes',
+            #     'cat':  'count',
+            #     'ph': 'C',
+            #     'ts': time_key,
+            #     'dur': event_duration,
+            #     'pid': panel_k,
+            #     'args': {
+            #         'size': size
+            #     }
+            # })            
             
     chrome_trace_events['traceEvents'] = sum_events + detailed_events
     json.dump(chrome_trace_events, json_file, indent=4)
