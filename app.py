@@ -70,7 +70,7 @@ def print_packets(pcap):
 
             time_key = int(seconds) * event_duration
 
-            panel_label = "%s -> %s" % (inet_to_str(ip.src), inet_to_str(ip.dst))
+            panel_label = "%s -> %s [Summary]" % (inet_to_str(ip.src), inet_to_str(ip.dst))
             if panel_label not in panels:
                 panels[panel_label] = {}
             panel = panels[panel_label]
@@ -94,8 +94,8 @@ def print_packets(pcap):
                 'ph': 'X',
                 'ts': time_key,
                 'dur': event_duration,
-                'pid': inet_to_str(ip.src),
-                'tid': 'Src Port: %d' % udp.sport,
+                'pid': "%s -> %s [Details]" % (inet_to_str(ip.src), inet_to_str(ip.dst)),
+                'tid': 'packages_from_port: %d' % udp.sport,
                 'args': event
             })
 
@@ -114,7 +114,7 @@ def print_packets(pcap):
                 'ts': time_key,
                 'dur': event_duration,
                 'pid': panel_k,
-                'tid': 'pkg_count',
+                'tid': 'package_count',
                 # 'args': {}
             })
             sum_events.append({
@@ -124,7 +124,7 @@ def print_packets(pcap):
                 'ts': time_key,
                 'dur': event_duration,
                 'pid': panel_k,
-                'tid': 'pkg_bytes',
+                'tid': 'package_bytes',
                 # 'args': {}
             })
             
