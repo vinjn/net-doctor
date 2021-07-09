@@ -4,6 +4,8 @@ import datetime
 import json
 from dpkt.utils import mac_to_str, inet_to_str
 
+event_duration = 1000000
+
 csv_file = None
 json_file = None
 
@@ -17,8 +19,11 @@ def print_packets(pcap):
         # "name": "process_name", "ph": "M", "pid": "Main", "tid": "工作", "args": {"name": "时间线"}}
         'traceEvents': []
     }
+    sum_events = []
+    detailed_events = []
     global csv_file
     time_0 = None
+    panels = {}
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
 
@@ -51,26 +56,79 @@ def print_packets(pcap):
             csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
                 (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
 
-            data = udp.data.hex(' ')
-            chrome_trace_events['traceEvents'].append({
+            hex_data = udp.data.hex()
+            size = len(hex_data)
+            nice_data = []
+            row_size = 32
+            for i in range(0, size, row_size):
+                row = hex_data[i:i+row_size]
+                nice_row = ''
+                for j in range(0, row_size, 2):
+                    nice_row += row[j:j+2]
+                    nice_row += ' '
+                nice_data.append(nice_row)
+
+            time_key = int(seconds) * event_duration
+
+            panel_label = "%s -> %s" % (inet_to_str(ip.src), inet_to_str(ip.dst))
+            if panel_label not in panels:
+                panels[panel_label] = {}
+            panel = panels[panel_label]
+            
+            if time_key not in panel:
+                panel[time_key] = []
+            time_container = panel[time_key]
+
+            event = {
+                'bytes': payload,
+                'time': ts.replace('000', ''),
+                'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
+                'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport),
+                'data': '\n'.join(nice_data)
+            }
+
+            time_container.append(event)
+            detailed_events.append({
                 'name': str(payload),
                 'cat':  protocol,
                 'ph': 'X',
-                'ts': int(seconds) * 1000000,
-                'dur': 1000000,
+                'ts': time_key,
+                'dur': event_duration,
                 'pid': inet_to_str(ip.src),
                 'tid': 'Src Port: %d' % udp.sport,
-                'args': {
-                    'bytes': payload,
-                    'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
-                    'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport),
-                    'data': data
-                }
+                'args': event
             })
 
-        # Print out the info, including the fragment flags and offset
-        # print('IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' %
-            #   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, ip.df, ip.mf, ip.offset))
+    # sum events
+    for panel_k, panel in panels.items():
+        for time_key, events in panel.items():
+            count = 0
+            size = 0
+            for event in events:
+                count += 1
+                size += event['bytes']
+            sum_events.append({
+                'name': str(count),
+                'cat':  'count',
+                'ph': 'X',
+                'ts': time_key,
+                'dur': event_duration,
+                'pid': panel_k,
+                'tid': 'pkg_count',
+                # 'args': {}
+            })
+            sum_events.append({
+                'name': str(size),
+                'cat': 'size',
+                'ph': 'X',
+                'ts': time_key,
+                'dur': event_duration,
+                'pid': panel_k,
+                'tid': 'pkg_bytes',
+                # 'args': {}
+            })
+            
+    chrome_trace_events['traceEvents'] = sum_events + detailed_events
     json.dump(chrome_trace_events, json_file, indent=4)
 
     
