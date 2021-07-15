@@ -39,7 +39,7 @@ def print_packets(pcap):
 
         # Make sure the Ethernet data contains an IP packet
         if not isinstance(eth.data, dpkt.ip.IP):
-            print('Non IP Packet type not supported %s\n' % eth.data.__class__.__name__)
+            # print('Non IP Packet type not supported %s\n' % eth.data.__class__.__name__)
             continue
 
         # Now access the data within the Ethernet frame (the IP packet)
@@ -154,11 +154,6 @@ def print_packets(pcap):
     chrome_trace_events['traceEvents'] = sum_events + detailed_events
     json.dump(chrome_trace_events, json_file, indent=4)
 
-    
-    # Pretty print the last packet
-    # print('** Pretty print demo **\n')
-    # print(eth)
-
 def process_file(file_name):
     """Open up a test pcap file and print out the packets"""
     global csv_file, json_file
@@ -172,9 +167,11 @@ def process_file(file_name):
         json_file = open(file_name + '.json', 'w')
         csv_file.write('protocol,bytes,timestamp,src,dst\n')
         print_packets(pcap)
+        print('Writes: ', file_name + '.csv')
+        print('Writes: ', file_name + '.json')
 
 if __name__ == '__main__':
     pcap_file = 'qnet_save/pcap/com.t3game.vs_2021_07_05_15_49_30_edited.pcapng'
     if len(sys.argv) > 1:
-        pkg_csv = sys.argv[1]
+        pcap_file = sys.argv[1]
     process_file(pcap_file)
