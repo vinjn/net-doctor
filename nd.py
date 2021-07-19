@@ -3,11 +3,17 @@ import dpkt
 import datetime
 import json
 from dpkt.utils import mac_to_str, inet_to_str
+from pathlib import Path
+import os
 
 event_duration = 1000000
 
+WRITES_CSV = False
+
 csv_file = None
 json_file = None
+
+cwd = Path(__file__).parent
 
 def print_packets(pcap):
     """Print out information about each packet in a pcap
@@ -53,8 +59,9 @@ def print_packets(pcap):
             protocol = ip.data.__class__.__name__
             udp = ip.data
             payload = len(udp)
-            csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
-                (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
+            if WRITES_CSV:
+                csv_file.write('%s,%4d,%s,%s:%d,%s:%d\n' %
+                    (protocol, payload, ts, inet_to_str(ip.src), udp.sport, inet_to_str(ip.dst), udp.dport))
 
             hex_data = udp.data.hex()
             size = len(hex_data)
@@ -163,15 +170,35 @@ def process_file(file_name):
             pcap = dpkt.pcapng.Reader(f)
         else:
             pcap = dpkt.pcap.Reader(f)
-        csv_file = open(file_name + '.csv', 'w')
+        if WRITES_CSV:
+            csv_file = open(file_name + '.csv', 'w')
+            csv_file.write('protocol,bytes,timestamp,src,dst\n')
         json_file = open(file_name + '.json', 'w')
-        csv_file.write('protocol,bytes,timestamp,src,dst\n')
         print_packets(pcap)
-        print('Writes: ', file_name + '.csv')
-        print('Writes: ', file_name + '.json')
+        if WRITES_CSV:
+            print('Writes: ', file_name + '.csv')
+        print(file_name + '.json')
 
 if __name__ == '__main__':
-    pcap_file = 'qnet_save/pcap/com.t3game.vs_2021_07_05_15_49_30_edited.pcapng'
     if len(sys.argv) > 1:
         pcap_file = sys.argv[1]
-    process_file(pcap_file)
+        print("Converting pcap file %s." % pcap_file)
+        process_file(pcap_file)
+    else:
+        import subprocess
+        print("Pulling pcap files from qnet folder.")
+        adb_exe = str(cwd / 'bin' / 'adb.exe')
+        wrangler_exe = str(cwd / 'bin' / 'TraceWrangler.exe')
+        wrangler_task = str(cwd / 'bin' / 'cvt.task')
+        subprocess.run([adb_exe, 'pull', '/sdcard/qnet_save'], shell=True)
+        pcap_dir = cwd / 'qnet_save' / 'pcap'
+        if not pcap_dir.exists():
+            exit(1)
+
+        for pcap in pcap_dir.iterdir():
+            if pcap.suffix == '.pcap':
+                pcap_str = str(pcap)
+                subprocess.run([wrangler_exe, pcap_str, wrangler_task, '/autorun', '/exit'], shell=True)
+                pcapng = pcap_str.replace('.pcap', '_edited.pcapng')
+                process_file(pcapng)
+
