@@ -16,6 +16,12 @@ json_file = None
 
 cwd = Path(__file__).parent
 
+def open_chrome_tracing():
+    import webbrowser 
+    # open a public URL, in this case, the webbrowser docs
+    url = "http://rd.xindong.com/net-doctor/trace_viewer.html"
+    webbrowser.open_new_tab(url)
+
 def print_packets(pcap):
     """Print out information about each packet in a pcap
        Args:
@@ -212,3 +218,4 @@ if __name__ == '__main__':
             if pcap.suffix == '.pcap':
                 process_file(str(pcap))
 
+    # open_chrome_tracing()

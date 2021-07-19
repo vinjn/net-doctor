@@ -123,7 +123,19 @@ found in the LICENSE file.
 
         var urlParams = new URLSearchParams(window.location.search);
         url = urlParams.get("tracing_url");
-        load();
+        if (url !== null) url = urlParams.get("file");
+        if (url !== null) url = urlParams.get("url");
+        if (url !== null)
+        {
+          load();
+        }
+        else
+        {
+          var overlay = new tr.ui.b.Overlay();
+          overlay.textContent = 'chrome://tracing'
+          overlay.title = 'Open the address in chrome';
+          overlay.visible = true;
+        }
       });
     }());
   </script>
