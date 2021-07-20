@@ -98,7 +98,7 @@ def print_packets(pcap):
                 'time': ts.replace('000', ''),
                 'src': '%s:%d' % (inet_to_str(ip.src), udp.sport),
                 'dst': '%s:%d' % (inet_to_str(ip.dst), udp.dport),
-                # 'data': '\n'.join(nice_data)
+                'data': '\n'.join(nice_data)
             }
 
             time_container.append(event)

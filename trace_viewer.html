@@ -123,8 +123,8 @@ found in the LICENSE file.
 
         var urlParams = new URLSearchParams(window.location.search);
         url = urlParams.get("tracing_url");
-        if (url !== null) url = urlParams.get("file");
-        if (url !== null) url = urlParams.get("url");
+        if (url === null) url = urlParams.get("file");
+        if (url === null) url = urlParams.get("url");
         if (url !== null)
         {
           load();
